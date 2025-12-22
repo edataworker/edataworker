@@ -65,7 +65,7 @@ fetch("https://api.github.com/repos/edataworker/mysite/contents/blog")
       card.innerHTML = `
       <h3>${title}</h3>
       <p><small>${date}</small></p>
-      <a class="cta" href="blog/${file.name}.html" target="_blank" rel="noopener">Read More</a>
+      <a class="cta" href="blog/${file.name}" target="_blank" rel="noopener">Read More</a>
 `    ;
 
       blogContainer.appendChild(card);
@@ -74,6 +74,7 @@ fetch("https://api.github.com/repos/edataworker/mysite/contents/blog")
   .catch(() => {
     blogContainer.innerHTML = "<p>Unable to load blog posts right now.</p>";
   });
+
 
 
 
