@@ -1,170 +1,215 @@
-// Consolidated JavaScript for eDataWorker Portfolio - Automatic Image Loader
+// Enhanced JavaScript for eDataWorker Portfolio with Automatic Image Loading from GitHub
+document.addEventListener('DOMContentLoaded', async function() {
+ 
+  // Add Font Awesome icons
+  const fontAwesome = document.createElement('link');
+  fontAwesome.rel = 'stylesheet';
+  fontAwesome.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+  document.head.appendChild(fontAwesome);
 
-document.addEventListener('DOMContentLoaded', function() {
-    // GitHub Repository Configuration
-    const GITHUB_USERNAME = 'edataworker'; // Your GitHub username
-    const GITHUB_REPO = 'edataworker.github.io'; // Your GitHub Pages repository
-    const BRANCH = 'main'; // Your default branch
+  // Replace these with your actual GitHub username and repository name
+  const owner = 'YOUR_GITHUB_USERNAME'; // e.g., 'eDataWorker'
+  const repo = 'YOUR_REPO_NAME'; // e.g., 'portfolio'
 
-    // Base URLs for GitHub API and raw content
-    const GITHUB_API_BASE = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents`;
-    const GITHUB_RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${GITHUB_REPO}/${BRANCH}`;
-
-    // Function to load images from a specific folder
-    async function loadImagesFromFolder(folderName, galleryElementId, type = 'logo') {
-        const galleryElement = document.getElementById(galleryElementId);
-        
-        if (!galleryElement) {
-            console.error(`Gallery element #${galleryElementId} not found.`);
-            return;
-        }
-
-        // Show loading state
-        galleryElement.innerHTML = `
-            <div class="${type}-item">
-                <div class="${type}-placeholder">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <div>Loading ${type}s...</div>
-                </div>
+  // Function to fetch image list from GitHub API
+  async function getImagesFromFolder(folder) {
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/mysite/${folder}`;
+    try {
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data
+        .filter(file => file.type === 'file' && /\.(png|jpg|jpeg|gif)$/i.test(file.name))
+        .map(file => ({
+          url: `/mysite/${folder}/${file.name}`,
+          alt: file.name.replace(/\.\w+$/, '')
+        }));
+    } catch (error) {
+      console.error(`Error fetching images from ${folder}:`, error);
+      return [];
+    }
+  }
+ 
+  // Simple image loading function
+  function loadImages(imageList, containerId, type = 'logo') {
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.error(`Container ${containerId} not found`);
+      return;
+    }
+   
+    // Clear loading placeholder
+    container.innerHTML = '';
+   
+    // Check if we have images to load
+    if (!imageList || imageList.length === 0) {
+      // Show placeholder if no images
+      if (type === 'logo') {
+        container.innerHTML = `
+          <div class="logo-item">
+            <div class="logo-placeholder">
+              <i class="fas fa-images"></i>
+              <div>No logos found</div>
+              <small>Add images to /mysite/logo/ folder in your GitHub repo</small>
             </div>
+          </div>
         `;
+      } else {
+        container.innerHTML = `
+          <div class="testimonial-card">
+            <div class="testimonial-placeholder">
+              <i class="fas fa-image"></i>
+              <div>No testimonials found</div>
+              <small>Add screenshots to /mysite/testimonial/ folder in your GitHub repo</small>
+            </div>
+          </div>
+        `;
+      }
+      return;
+    }
+   
+    // Load each image
+    imageList.forEach((image, index) => {
+      if (type === 'logo') {
+        const logoItem = document.createElement('div');
+        logoItem.className = 'logo-item fade-in';
+        logoItem.innerHTML = `
+          <img src="${image.url}"
+               class="logo-image"
+               alt="${image.alt || 'Logo ' + (index + 1)}"
+               onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\"logo-placeholder\\"><i class=\\"fas fa-image\\"></i><div>Logo ${index + 1}</div><small>Image not found</small></div>';">
+        `;
+        container.appendChild(logoItem);
+      } else {
+        const testimonialCard = document.createElement('div');
+        testimonialCard.className = 'testimonial-card fade-in';
+        testimonialCard.innerHTML = `
+          <img src="${image.url}"
+               class="testimonial-image"
+               alt="${image.alt || 'Testimonial ' + (index + 1)}"
+               onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\"testimonial-placeholder\\"><i class=\\"fas fa-image\\"></i><div>Testimonial ${index + 1}</div><small>Screenshot not found</small></div>';">
+        `;
+        container.appendChild(testimonialCard);
+      }
+    });
+  }
 
-        try {
-            // Fetch folder contents from GitHub API
-            const apiUrl = `${GITHUB_API_BASE}/${folderName}`;
-            console.log(`Fetching from: ${apiUrl}`);
-            
-            const response = await fetch(apiUrl);
-            
-            if (!response.ok) {
-                if (response.status === 404) {
-                    throw new Error(`The "${folderName}" folder was not found in your repository.`);
-                }
-                // Handle GitHub API rate limits [citation:1][citation:6]
-                if (response.status === 403 || response.status === 429) {
-                    console.warn(`GitHub API rate limit may be exceeded. Status: ${response.status}`);
-                    // You could check x-ratelimit-remaining header here [citation:10]
-                }
-                throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
-            }
+  // Load images automatically from folders
+  async function loadAllImages() {
+    const logoImages = await getImagesFromFolder('logo');
+    loadImages(logoImages, 'logoGallery', 'logo');
 
-            const files = await response.json();
-            
-            // Filter for image files (png, jpg, jpeg, gif, webp, svg)
-            const imageFiles = files.filter(file => 
-                file.type === 'file' && 
-                /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(file.name)
-            );
+    const testimonialImages = await getImagesFromFolder('testimonial');
+    loadImages(testimonialImages, 'testimonialGallery', 'testimonial');
+  }
 
-            console.log(`Found ${imageFiles.length} images in ${folderName}/`);
-
-            // Clear gallery
-            galleryElement.innerHTML = '';
-
-            if (imageFiles.length === 0) {
-                // Show message if no images found
-                galleryElement.innerHTML = `
-                    <div class="${type}-item">
-                        <div class="${type}-placeholder">
-                            <i class="fas fa-folder-open"></i>
-                            <div>No ${type}s found</div>
-                            <small>Add images to the <code>/${folderName}/</code> folder</small>
-                        </div>
-                    </div>
-                `;
-                return;
-            }
-
-            // Create and append image elements
-            imageFiles.forEach(file => {
-                const imageUrl = file.download_url || `${GITHUB_RAW_BASE}/${folderName}/${file.name}`;
-                
-                if (type === 'logo') {
-                    // Create logo item
-                    const logoItem = document.createElement('div');
-                    logoItem.className = 'logo-item fade-in';
-                    logoItem.innerHTML = `
-                        <img src="${imageUrl}" 
-                             class="logo-image" 
-                             alt="${file.name.replace(/\.[^/.]+$/, '')}"
-                             loading="lazy"
-                             onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\"logo-placeholder\"><i class=\"fas fa-exclamation-triangle\"></i><div>Failed to load</div></div>';">
-                    `;
-                    galleryElement.appendChild(logoItem);
-                } else if (type === 'testimonial') {
-                    // Create testimonial card
-                    const testimonialCard = document.createElement('div');
-                    testimonialCard.className = 'testimonial-card fade-in';
-                    
-                    // You can customize the text based on filename or other logic
-                    const defaultText = "Great service and excellent results!";
-                    const defaultAuthor = "Satisfied Client";
-                    
-                    testimonialCard.innerHTML = `
-                        <img src="${imageUrl}" 
-                             class="testimonial-image" 
-                             alt="Testimonial screenshot: ${file.name}"
-                             loading="lazy"
-                             onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\"testimonial-placeholder\"><i class=\"fas fa-exclamation-triangle\"></i><div>Image not found</div></div>';">
-                        <p class="testimonial-text">"${defaultText}"</p>
-                        <strong class="testimonial-author">- ${defaultAuthor}</strong>
-                    `;
-                    galleryElement.appendChild(testimonialCard);
-                }
-            });
-
-        } catch (error) {
-            console.error(`Error loading ${type}s:`, error);
-            galleryElement.innerHTML = `
-                <div class="${type}-item">
-                    <div class="${type}-placeholder error">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <div>Error loading ${type}s</div>
-                        <small>${error.message}</small>
-                        <br>
-                        <small style="margin-top: 10px; display: block;">
-                            Check: 1) Folder exists 2) Images are inside 3) Repository is public
-                        </small>
-                    </div>
-                </div>
-            `;
+  // Load the images
+  await loadAllImages();
+ 
+  // Animate elements on scroll
+  const animateOnScroll = () => {
+    const elements = document.querySelectorAll('.card, .price-card, .logo-item, .testimonial-card');
+   
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('fade-in');
+          observer.unobserve(entry.target);
         }
+      });
+    }, {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    });
+   
+    elements.forEach(el => observer.observe(el));
+  };
+ 
+  // Smooth scroll for anchor links
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      e.preventDefault();
+      const targetId = this.getAttribute('href');
+      if (targetId === '#') return;
+     
+      const targetElement = document.querySelector(targetId);
+      if (targetElement) {
+        window.scrollTo({
+          top: targetElement.offsetTop - 80,
+          behavior: 'smooth'
+        });
+      }
+    });
+  });
+ 
+  // Form submission feedback
+  const contactForm = document.querySelector('.contact-form');
+  if (contactForm) {
+    contactForm.addEventListener('submit', function(e) {
+      // Allow actual form submission to FormSubmit.co
+      // Just add a visual feedback
+      const submitBtn = this.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+     
+      // Change button text to indicate loading
+      submitBtn.textContent = 'Sending...';
+      submitBtn.disabled = true;
+     
+      // Re-enable after 5 seconds in case form submission fails
+      setTimeout(() => {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+      }, 5000);
+    });
+  }
+ 
+  // Initialize animations
+  animateOnScroll();
+ 
+  // Add hover effect to service cards
+  const serviceCards = document.querySelectorAll('#services .card');
+  serviceCards.forEach(card => {
+    card.addEventListener('mouseenter', function() {
+      this.style.borderTopColor = 'var(--secondary)';
+    });
+   
+    card.addEventListener('mouseleave', function() {
+      this.style.borderTopColor = 'var(--primary)';
+    });
+  });
+ 
+  // Dynamic year in footer
+  const footer = document.querySelector('footer p');
+  if (footer) {
+    const currentYear = new Date().getFullYear();
+    footer.innerHTML = footer.innerHTML.replace('2025', currentYear);
+  }
+ 
+  // Add a simple typing effect to the header tagline
+  const tagline = document.querySelector('header p');
+  if (tagline) {
+    const text = tagline.textContent;
+    tagline.textContent = '';
+    let i = 0;
+   
+    function typeWriter() {
+      if (i < text.length) {
+        tagline.textContent += text.charAt(i);
+        i++;
+        setTimeout(typeWriter, 30);
+      }
     }
-
-    // Add Font Awesome for icons if not already loaded
-    if (!document.querySelector('link[href*="font-awesome"]')) {
-        const fontAwesome = document.createElement('link');
-        fontAwesome.rel = 'stylesheet';
-        fontAwesome.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
-        document.head.appendChild(fontAwesome);
-    }
-
-    // Load images on page load
-    loadImagesFromFolder('logo', 'logoGallery', 'logo');
-    loadImagesFromFolder('testimonial', 'testimonialGallery', 'testimonial');
-
-    // Your existing animation and other functions here...
-    // (Keep your existing animateOnScroll, smooth scroll, etc. code below)
-    
-    // For example, keep your animation code:
-    const animateOnScroll = () => {
-        const elements = document.querySelectorAll('.card, .price-card, .logo-item, .testimonial-card');
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('fade-in');
-                    observer.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.1 });
-        elements.forEach(el => observer.observe(el));
-    };
-    animateOnScroll();
+   
+    // Start typing effect after a short delay
+    setTimeout(typeWriter, 1000);
+  }
+ 
+  // Log success
+  setTimeout(() => {
+    console.log('eDataWorker Portfolio loaded successfully!');
+    console.log('Images are now loaded automatically from GitHub folders.');
+    console.log('Make sure to replace YOUR_GITHUB_USERNAME and YOUR_REPO_NAME with your actual values.');
+  }, 1000);
 });
-
-// Expose function to manually refresh from browser console
-window.refreshPortfolioImages = function() {
-    console.log('Refreshing portfolio images...');
-    // You'll need to make loadImagesFromFolder globally accessible or re-trigger
-    location.reload(); // Simple reload for now
-};
