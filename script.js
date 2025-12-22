@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // GitHub Repository Information
   const GITHUB_USERNAME = 'edataworker'; // Your GitHub username
-  const REPO_NAME = 'edataworker.github.io'; // Your repository name
+  const REPO_NAME = 'edataworker.github.io/mysite'; // Your repository name
   const BRANCH = 'main'; // Your default branch
   
   // Base URLs
@@ -370,3 +370,4 @@ document.addEventListener('DOMContentLoaded', function() {
   ========================================
   `);
 });
+
