@@ -3,10 +3,10 @@ const repo = "mysite";
 const branch = "main";
 
 // LOGOS
-loadImages("logos", "logoGallery");
+loadImages("logo", "logoGallery");
 
 // TESTIMONIALS
-loadImages("testimonials", "testimonialGallery");
+loadImages("testimonial", "testimonialGallery");
 
 
 function loadImages(folder, elementId) {
@@ -26,3 +26,4 @@ function loadImages(folder, elementId) {
     })
     .catch(err => console.error("Error loading " + folder, err));
 }
+
