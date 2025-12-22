@@ -1,6 +1,6 @@
 const username = "edataworker";
 const repo = "mysite";
-const folder = "main/logos";
+const folder = "mysite\logos";
 
 const gallery = document.getElementById("logoGallery");
 
@@ -16,5 +16,6 @@ fetch(`https://api.github.com/repos/${username}/${repo}/contents/${folder}`)
     });
   })
   .catch(err => console.error("Error loading logos:", err));
+
 
 
